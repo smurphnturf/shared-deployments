@@ -1,0 +1,315 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: 'AWS::Serverless-2016-10-31'
+Description: >
+  (qs-1ph8nehap) 
+  Serverless CICD Quick Start
+  Custom Lambda function resources to operate on cross-account resources
+  and dynamically create pipelines.
+
+Parameters:
+  DevAwsAccountId:
+    Description: AWS account ID for development account
+    Type: String
+    AllowedPattern: (\d{12}|^$)
+    ConstraintDescription: Must be an AWS account ID
+  ProdAwsAccountId:
+    Description: AWS account ID for production account
+    Type: String
+    AllowedPattern: (\d{12}|^$)
+    ConstraintDescription: Must be an AWS account ID
+  AppName:
+    Description: Application name, used for the repository and child stack name
+    Type: String
+    Default: Sample
+  S3BucketName:
+    AllowedPattern: "^[0-9a-zA-Z]+([0-9a-zA-Z-]*[0-9a-zA-Z])*$"
+    ConstraintDescription: Quick Start bucket name can include numbers, lowercase letters, uppercase letters, and hyphens (-). It cannot start or end with a hyphen (-).
+    Default: aws-quickstart
+    Description: S3 bucket name for the Quick Start assets. This string can include numbers, lowercase letters, uppercase letters, and hyphens (-). It cannot start or end with a hyphen (-)
+    Type: String
+  S3BucketRegion:
+    Default: 'ap-southeast-2'
+    Description: 'The AWS Region where the Quick Start S3 bucket (S3BucketName) is hosted. When using your own bucket, you must specify this value.'
+    Type: String
+  S3KeyPrefix:
+    AllowedPattern: "^[0-9a-zA-Z-/]*$"
+    ConstraintDescription: AWS Quick Start key prefix can include numbers, lowercase letters, uppercase letters, hyphens (-), and forward slash (/). It cannot start or end with forward slash (/) because they are automatically appended.
+    Default: quickstart-cicd-serverless
+    Description: S3 key prefix for the AWS Quick Start assets. AWS Quick Start key prefix can include numbers, lowercase letters, uppercase letters, hyphens (-), and forward slash (/). It cannot start or end with forward slash (/) because they are automatically appended
+    Type: String
+  PipelineServiceRoleArn:
+    Description: Pipeline service role ARN
+    Type: String
+  ArtifactBucket:
+    Description: Artifact bucket
+    Type: String
+  ArtifactBucketKeyArn:
+    Description: ARN of the artifact bucket KMS key
+    Type: String
+  SamTranslationBucket:
+    Description: S3 bucket for SAM translations
+    Type: String
+  ParentStackName:
+    Description: The name of the Parent Stack
+    Type: String
+
+Conditions:
+  UsingDefaultBucket: !Equals [!Ref S3BucketName, 'aws-quickstart']
+
+Resources:
+  QuickStartStackMakerLambdaRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+        - Effect: Allow
+          Principal:
+            Service: lambda.amazonaws.com
+          Action: sts:AssumeRole
+      Path: /
+      Policies:
+      - PolicyName: CfnStackAssumeRole
+        PolicyDocument:
+          Version: '2012-10-17'
+          Statement:
+          - Effect: Allow
+            Action:
+            - logs:CreateLogGroup
+            - logs:CreateLogStream
+            - logs:PutLogEvents
+            Resource:
+            - arn:aws:logs:*:*:*
+          - Effect: Allow
+            Action:
+            - sts:AssumeRole
+            Resource: "*"
+          - Effect: Allow
+            Action:
+            - lambda:AddPermission
+            - lambda:RemovePermission
+            Resource:  "*"
+          - Effect: Allow
+            Action:
+            - events:PutRule
+            - events:DeleteRule
+            - events:PutTargets
+            - events:RemoveTargets
+            Resource:  "*"
+
+  QuickStartStackMakerLambda:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: lambda/code/stack-maker
+      #FunctionName:
+      Handler: index.lambda_handler
+      MemorySize: 128
+      Role: !GetAtt QuickStartStackMakerLambdaRole.Arn
+      Runtime: python3.6
+      Timeout: 900
+
+  DynamicPipelineCleanupLambdaRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+        - Effect: Allow
+          Principal:
+            Service: lambda.amazonaws.com
+          Action: sts:AssumeRole
+      Path: /
+      Policies:
+      - PolicyName: DynamicPipelineCleanup
+        PolicyDocument:
+          Version: '2012-10-17'
+          Statement:
+          - Effect: Allow
+            Action:
+            - logs:CreateLogGroup
+            - logs:CreateLogStream
+            - logs:PutLogEvents
+            Resource:
+            - arn:aws:logs:*:*:*
+          - Effect: Allow
+            Action:
+              - sts:AssumeRole
+            Resource:
+              - !Sub arn:aws:iam::${DevAwsAccountId}:role/CodePipelineServiceRole-${AWS::Region}-${DevAwsAccountId}-dev
+              - !Sub arn:aws:iam::${ProdAwsAccountId}:role/CodePipelineServiceRole-${AWS::Region}-${ProdAwsAccountId}-prod
+
+  DynamicPipelineCleanupLambda:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: lambda/code/pipeline-cleanup
+      Handler: index.lambda_handler
+      MemorySize: 128
+      Runtime: python3.6
+      Timeout: 900
+      Role: !GetAtt DynamicPipelineCleanupLambdaRole.Arn
+      Environment:
+        Variables:
+          LOGGING_LEVEL: INFO
+          AppName: !Ref AppName
+
+
+  DynamicPipelineMakerLambdaRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+        - Effect: Allow
+          Principal:
+            Service: lambda.amazonaws.com
+          Action: sts:AssumeRole
+      Path: /
+      Policies:
+      - PolicyName: DynamicPipelineCleanup
+        PolicyDocument:
+          Version: '2012-10-17'
+          Statement:
+          - Effect: Allow
+            Action:
+            - logs:CreateLogGroup
+            - logs:CreateLogStream
+            - logs:PutLogEvents
+            Resource:
+            - arn:aws:logs:*:*:*
+          - Effect: Allow
+            Action:
+              - cloudformation:CreateStack
+              - cloudformation:DescribeStacks
+              - cloudformation:DeleteStack
+            Resource: !Sub arn:aws:cloudformation:${AWS::Region}:${AWS::AccountId}:stack/${ParentStackName}*/*
+          - Effect: Allow
+            Action:
+              - codebuild:CreateProject
+              - codebuild:DeleteProject
+            Resource:
+              - !Sub arn:aws:codebuild:${AWS::Region}:${AWS::AccountId}:project/DeployDevProject-*
+              - !Sub arn:aws:codebuild:${AWS::Region}:${AWS::AccountId}:project/SmokeTestDevProject-*
+              - !Sub arn:aws:codebuild:${AWS::Region}:${AWS::AccountId}:project/BuildProject-*
+          - Effect: Allow
+            Action:
+              - iam:PassRole
+            Resource:
+              - !Ref PipelineServiceRoleArn
+              - !Sub arn:aws:iam::${DevAwsAccountId}:role/CodePipelineDeploymentRole-${AWS::Region}-${DevAwsAccountId}-dev
+              - !Sub arn:aws:iam::${DevAwsAccountId}:role/CodePipelineServiceRole-${AWS::Region}-${DevAwsAccountId}-dev
+          - Effect: Allow
+            Action:
+              - codepipeline:CreatePipeline
+              - codepipeline:GetPipeline
+              - codepipeline:GetPipelineState
+              - codepipeline:DeletePipeline
+            Resource: !Sub arn:aws:codepipeline:${AWS::Region}:${AWS::AccountId}:${ParentStackName}*
+          - Effect: Allow
+            Action:
+              - lambda:InvokeFunction
+            Resource: !GetAtt DynamicPipelineCleanupLambda.Arn
+          - Effect: Allow
+            Action:
+              - s3:GetObject
+            Resource:
+              #- !Sub arn:aws:s3:::${S3BucketName}/${S3KeyPrefix}*
+              - "*"
+          - Effect: Allow
+            Action:
+              - secretsmanager:*
+            Resource:
+              - "arn:aws:secretsmanager:ap-southeast-2:833843385348:secret:poc-github-personal-access-token-code-build-26zfJL"
+
+  DynamicPipelineMakerLambda:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: lambda/code/pipeline-maker
+      Handler: index.lambda_handler
+      MemorySize: 128
+      Runtime: python3.6
+      Timeout: 900
+      Role: !GetAtt DynamicPipelineMakerLambdaRole.Arn
+      Environment:
+        Variables:
+          LOGGING_LEVEL: INFO
+          TemplateURL: !Sub 
+            - https://${S3Bucket}.s3.${S3Region}.${AWS::URLSuffix}/${S3KeyPrefix}/templates/pipeline.template.yaml
+            - S3Region: !If [UsingDefaultBucket, !Ref 'AWS::Region', !Ref S3BucketRegion]
+              S3Bucket: !If [UsingDefaultBucket, !Sub '${S3BucketName}-${AWS::Region}', !Ref S3BucketName]
+          StackName: !Ref ParentStackName
+          DynamicPipelineCleanupLambdaArn: !GetAtt DynamicPipelineCleanupLambda.Arn
+          ArtifactBucket: !Ref ArtifactBucket
+          ArtifactBucketKeyArn: !Ref ArtifactBucketKeyArn
+          ProdAwsAccountId: !Ref ProdAwsAccountId
+          DevAwsAccountId: !Ref DevAwsAccountId
+          PipelineServiceRoleArn: !Ref PipelineServiceRoleArn
+          SamTranslationBucket: !Ref SamTranslationBucket
+
+  PipelineSNSTopic:
+    Type: 'AWS::SNS::Topic'
+
+  DynamicPipelineMakerLambdaSubscription:
+    Type: 'AWS::SNS::Subscription'
+    Properties:
+      TopicArn: !Ref PipelineSNSTopic
+      Endpoint: !GetAtt DynamicPipelineMakerLambda.Arn
+      Protocol: lambda
+
+  AllowSNSInvocation:
+    Type: AWS::Lambda::Permission
+    Properties:
+      Action: lambda:InvokeFunction
+      FunctionName: !GetAtt DynamicPipelineMakerLambda.Arn
+      Principal: sns.amazonaws.com
+      SourceArn: !Ref PipelineSNSTopic
+  
+  CleanUpBucketsLambdaRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+        - Effect: Allow
+          Principal:
+            Service: lambda.amazonaws.com
+          Action: sts:AssumeRole
+      Path: /
+      Policies:
+      - PolicyName: CleanUpBucketsLambda
+        PolicyDocument:
+          Version: '2012-10-17'
+          Statement:
+          - Effect: Allow
+            Action:
+            - logs:CreateLogGroup
+            - logs:CreateLogStream
+            - logs:PutLogEvents
+            Resource:
+            - arn:aws:logs:*:*:*
+          - Effect: Allow
+            Action:
+              - s3:*
+            Resource:
+              - !Sub arn:aws:s3:::${ArtifactBucket}
+              - !Sub arn:aws:s3:::${ArtifactBucket}/*
+              - !Sub arn:aws:s3:::${SamTranslationBucket}
+              - !Sub arn:aws:s3:::${SamTranslationBucket}/*
+
+  CleanUpBucketsLambda:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: lambda/code/bucket-cleanup
+      Handler: index.handler
+      Role: !GetAtt CleanUpBucketsLambdaRole.Arn
+      Runtime: python3.6
+      Timeout: 30
+
+Outputs:
+  QuickStartStackMakerLambda:
+    Value: !GetAtt QuickStartStackMakerLambda.Arn
+  DynamicPipelineCleanupLambda:
+    Value: !GetAtt DynamicPipelineCleanupLambda.Arn
+  DynamicPipelineMakerLambda:
+    Value: !GetAtt DynamicPipelineMakerLambda.Arn
+  CleanUpBucketsLambda:
+    Value: !GetAtt CleanUpBucketsLambda.Arn

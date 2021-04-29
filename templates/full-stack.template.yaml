@@ -1,0 +1,145 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: >
+  Serverless CICD Master template refers to sub-templates
+
+Parameters:
+  DevAwsAccountId:
+    Description: AWS account ID for development account
+    Type: String
+    AllowedPattern: (\d{12}|^$)
+    ConstraintDescription: Must be an AWS account ID
+  ProdAwsAccountId:
+    Description: AWS account ID for production account
+    Type: String
+    AllowedPattern: (\d{12}|^$)
+    ConstraintDescription: Must be an AWS account ID
+  BuildImageName:
+    Description: Docker image for application build
+    Type: String
+    Default: aws/codebuild/standard:5.0
+  S3BucketName:
+    AllowedPattern: "^[0-9a-zA-Z]+([0-9a-zA-Z-]*[0-9a-zA-Z])*$"
+    ConstraintDescription: Bucket name can include numbers, lowercase letters, uppercase letters, and hyphens (-). It cannot start or end with a hyphen (-).
+    Description: S3 bucket name for the deploymeny assets. This string can include numbers, lowercase letters, uppercase letters, and hyphens (-). It cannot start or end with a hyphen (-)
+    Type: String
+  S3BucketRegion:
+    Default: 'ap-southeast-2'
+    Description: 'The AWS Region where the S3 bucket (S3BucketName) is hosted'
+    Type: String
+  S3KeyPrefix:
+    AllowedPattern: "^[0-9a-zA-Z-/]*$"
+    ConstraintDescription: AWS key prefix can include numbers, lowercase letters, uppercase letters, hyphens (-), and forward slash (/). It cannot start with forward slash (/) because that is automatically appended.
+    Default: cicd-s3-prefix/
+    Description: S3 key prefix for the AWS assets. AWS key prefix can include numbers, lowercase letters, uppercase letters, hyphens (-), and forward slash (/). It cannot start with forward slash (/) because that is automatically appended. It will typically end with a forward slash.
+    Type: String
+  ProdChildAccountRoleName:
+    Description: Name of role created by ChildAccountRole template in production account
+    Type: String
+    Default: ChildAccountRole
+  DevChildAccountRoleName:
+    Description: Name of role created by ChildAccountRole template in development account
+    Type: String
+    Default: ChildAccountRole
+
+Conditions:
+  UsingDefaultBucket: !Equals [!Ref S3BucketName, 'aws-quickstart']
+
+Resources:
+  AccountStack:
+    Type: AWS::CloudFormation::Stack
+    Properties:
+      Parameters:
+        DevAwsAccountId: !Ref DevAwsAccountId
+        ProdAwsAccountId: !Ref ProdAwsAccountId
+      #TemplateURL: !Sub 
+      #  - https://${S3Bucket}.s3.${S3Region}.${AWS::URLSuffix}/${S3KeyPrefix}templates/account.template.yaml
+      #  - S3Region: !If [UsingDefaultBucket, !Ref 'AWS::Region', !Ref S3BucketRegion]
+      #    S3Bucket: !If [UsingDefaultBucket, !Sub '${S3BucketName}-${AWS::Region}', !Ref S3BucketName]
+      TemplateURL: file://../../templates/account.template.yaml
+      TimeoutInMinutes: 60
+
+  LambdaStack:
+    Type: AWS::CloudFormation::Stack
+    Properties:
+      Parameters:
+        DevAwsAccountId: !Ref DevAwsAccountId
+        ProdAwsAccountId: !Ref ProdAwsAccountId
+        PipelineServiceRoleArn: !GetAtt 
+          - AccountStack
+          - Outputs.PipelineServiceRoleArn
+        AppName: !Ref AppName
+        ParentStackName: !Ref AWS::StackName
+        S3BucketName: !Ref S3BucketName
+        S3BucketRegion: !Ref S3BucketRegion
+        S3KeyPrefix: !Ref S3KeyPrefix
+        ArtifactBucket: !GetAtt 
+          - AccountStack
+          - Outputs.PipelineArtifactBucket
+        ArtifactBucketKeyArn: !GetAtt 
+          - AccountStack
+          - Outputs.ArtifactBucketKeyArn
+        SamTranslationBucket: !GetAtt 
+          - AccountStack
+          - Outputs.SamTranslationBucket
+      #TemplateURL: !Sub 
+      #  - https://${S3Bucket}.s3.${S3Region}.${AWS::URLSuffix}/${S3KeyPrefix}templates/lambda.template.yaml 
+      #  - S3Region: !If [UsingDefaultBucket, !Ref 'AWS::Region', !Ref S3BucketRegion]      
+      #    S3Bucket: !If [UsingDefaultBucket, !Sub '${S3BucketName}-${AWS::Region}', !Ref S3BucketName]
+      TemplateURL: file://../../templates/lambda.template.yaml
+      TimeoutInMinutes: 60
+
+  CrossAccountStackDev:
+    Type: AWS::CloudFormation::Stack
+    Properties:
+      Parameters:
+        AwsAccountId: !Ref DevAwsAccountId
+        QuickStartStackMakerLambda: !GetAtt 
+          - LambdaStack
+          - Outputs.QuickStartStackMakerLambda
+        Stage: dev
+        ChildAccountRoleName: !Ref DevChildAccountRoleName
+      #TemplateURL: !Sub 
+      #  - https://${S3Bucket}.s3.${S3Region}.${AWS::URLSuffix}/${S3KeyPrefix}templates/cross-account.template.yaml
+      #  - S3Region: !If [UsingDefaultBucket, !Ref 'AWS::Region', !Ref S3BucketRegion]
+      #    S3Bucket: !If [UsingDefaultBucket, !Sub '${S3BucketName}-${AWS::Region}', !Ref S3BucketName]
+      TemplateURL: file://../../templates/cross-account.template.yaml
+      TimeoutInMinutes: 60
+
+  CrossAccountStackProd:
+    Type: AWS::CloudFormation::Stack
+    Properties:
+      Parameters:
+        AwsAccountId: !Ref ProdAwsAccountId
+        QuickStartStackMakerLambda: !GetAtt 
+          - LambdaStack
+          - Outputs.QuickStartStackMakerLambda
+        Stage: prod
+        ChildAccountRoleName: !Ref ProdChildAccountRoleName
+      #TemplateURL: !Sub
+      #  - https://${S3Bucket}.s3.${S3Region}.${AWS::URLSuffix}/${S3KeyPrefix}templates/cross-account.template.yaml
+      #  - S3Region: !If [UsingDefaultBucket, !Ref 'AWS::Region', !Ref S3BucketRegion]
+      #    S3Bucket: !If [UsingDefaultBucket, !Sub '${S3BucketName}-${AWS::Region}', !Ref S3BucketName]
+      TemplateURL: file://../../templates/cross-account.template.yaml
+      TimeoutInMinutes: 60
+
+  CleanUpSamBuckets:
+    Type: AWS::CloudFormation::CustomResource
+    Properties:
+      ServiceToken: !GetAtt 
+        - LambdaStack
+        - Outputs.CleanUpBucketsLambda
+      Bucket: !GetAtt 
+        - AccountStack
+        - Outputs.SamTranslationBucket
+
+  CleanUpArtifactBuckets:
+    Type: AWS::CloudFormation::CustomResource
+    Properties:
+      ServiceToken: !GetAtt 
+        - LambdaStack
+        - Outputs.CleanUpBucketsLambda
+      Bucket: !GetAtt 
+        - AccountStack
+        - Outputs.PipelineArtifactBucket
+
+      
