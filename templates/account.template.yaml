@@ -123,7 +123,7 @@ Resources:
                 Resource:
                   - !Sub arn:aws:iam::${DevAwsAccountId}:role/CodePipelineServiceRole-${AWS::Region}-${DevAwsAccountId}-dev
                   - !Sub arn:aws:iam::${ProdAwsAccountId}:role/CodePipelineServiceRole-${AWS::Region}-${ProdAwsAccountId}-prod
-                  - !Sub arn:aws:iam::${AWS::AccountId}:role/CodePipelineDeploymentRole-*
+                  - !Sub arn:aws:iam::${AWS::AccountId}:role/CodePipelineDeploymentRole-${AWS::AccountId}-testshared
               - Resource: '*'
                 Effect: Allow
                 Action:
