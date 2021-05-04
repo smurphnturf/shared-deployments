@@ -42,6 +42,11 @@ def create_pipeline_stack(branch, customParameters):
     response = cf_client.create_stack(
         StackName=StackName,
         TemplateURL=template_url,
+        Capabilities=[
+            'CAPABILITY_IAM',
+            'CAPABILITY_NAMED_IAM',
+            'CAPABILITY_AUTO_EXPAND'
+        ],
         Parameters=[
             {
                 'ParameterKey': 'Branch',

@@ -4,6 +4,16 @@ Description: >
   Per branch with conditional behvious depending on branch name for releases
 
 Parameters:
+  RepoName: # UNUSED
+    Description: Repo name passed by the pipeline maker lambda
+    Type: String
+    Default: ''
+  SamTranslationBucket: # Provided by pipeline maker lambda in shared-deployments from default env variables
+    Description: S3 bucket for SAM translations
+    Type: String
+  DynamicPipelineCleanupLambdaArn: # Provided by pipeline maker lambda in shared-deployments from default env variables
+    Description: ARN of Lambda function to clean up dynamic pipeline
+    Type: String
   DevAwsAccountId: # Provided by pipeline maker lambda in shared-deployments from default env variables
     Description: AWS account ID for development account
     Type: String
