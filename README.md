@@ -19,6 +19,6 @@ sam build --template templates/full-stack.template.yaml -b .aws-sam/build --debu
 
 sam deploy --stack-name=Serverless-CICD-cross-account-poc --s3-prefix=serverless-cicd --profile=shared-poweruser --s3-bucket=au-slyp-com-shared-cross-account-template-base-poc --parameter-overrides=DevAwsAccountId=293952095306 ProdAwsAccountId=040536061213 S3BucketName=au-slyp-com-shared-cross-account-template-base-poc S3KeyPrefix=serverless-cicd  --capabilities CAPABILITY_NAMED_IAM CAPABILITY_AUTO_EXPAND
 
-
+# self deployment
 
 {"repository":"smurphnturf/shared-deployments","ref":"refs/heads/release/self-deployment-test-1","base_ref":"","event_name":"create"}
