@@ -197,8 +197,16 @@ Resources:
               - !Sub arn:aws:iam::${ProdAwsAccountId}:role/CodePipelineDeploymentRole-${AWS::Region}-${ProdAwsAccountId}-prod
               - !Sub arn:aws:iam::${DevAwsAccountId}:role/CodePipelineServiceRole-${AWS::Region}-${DevAwsAccountId}-dev
               - !Sub arn:aws:iam::${ProdAwsAccountId}:role/CodePipelineServiceRole-${AWS::Region}-${ProdAwsAccountId}-prod
+          # adding self deployment ability to assume this accounts CodePipelieDeploymentRole
           - Effect: Allow
             Action:
+              - iam:CreateRole
+              - iam:DeleteRole
+              - iam:GetRole
+              - iam:DetachRolePolicy
+              - iam:AttachRolePolicy
+              - iam:PutRolePolicy
+              - iam:DeleteRolePolicy
               - iam:GetRole
             Resource:
               #- !Sub arn:aws:iam::${AWS::AccountId}:role/SampleLambdaRole-*
