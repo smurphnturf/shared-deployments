@@ -114,8 +114,8 @@ Resources:
   Pipeline:
     Type: AWS::CodePipeline::Pipeline
     Properties:
-      #RoleArn: !Ref PipelineServiceRoleArn
-      RoleArn: !GetAtt ServiceRole.Arn
+      RoleArn: !Ref PipelineServiceRoleArn
+      #RoleArn: !GetAtt ServiceRole.Arn
       Stages:
         - Name: Source
           Actions:
