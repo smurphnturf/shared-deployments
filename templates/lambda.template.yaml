@@ -17,10 +17,6 @@ Parameters:
     Type: String
     AllowedPattern: (\d{12}|^$)
     ConstraintDescription: Must be an AWS account ID
-  AppName:
-    Description: Application name, used for the repository and child stack name
-    Type: String
-    Default: Sample
   S3BucketName:
     AllowedPattern: "^[0-9a-zA-Z]+([0-9a-zA-Z-]*[0-9a-zA-Z])*$"
     ConstraintDescription: Quick Start bucket name can include numbers, lowercase letters, uppercase letters, and hyphens (-). It cannot start or end with a hyphen (-).
@@ -150,7 +146,7 @@ Resources:
       Environment:
         Variables:
           LOGGING_LEVEL: INFO
-          AppName: !Ref AppName
+          #AppName: 'app-name-should-be-removed'
 
 
   DynamicPipelineMakerLambdaRole:
@@ -181,7 +177,8 @@ Resources:
               - cloudformation:CreateStack
               - cloudformation:DescribeStacks
               - cloudformation:DeleteStack
-            Resource: !Sub arn:aws:cloudformation:${AWS::Region}:${AWS::AccountId}:stack/${ParentStackName}*/*
+            Resource:
+              - !Sub arn:aws:cloudformation:${AWS::Region}:${AWS::AccountId}:stack/${ParentStackName}*/*
           - Effect: Allow
             Action:
               - codebuild:CreateProject
@@ -189,6 +186,7 @@ Resources:
             Resource:
               - !Sub arn:aws:codebuild:${AWS::Region}:${AWS::AccountId}:project/DeployDevProject-*
               - !Sub arn:aws:codebuild:${AWS::Region}:${AWS::AccountId}:project/SmokeTestDevProject-*
+              - !Sub arn:aws:codebuild:${AWS::Region}:${AWS::AccountId}:project/SmokeTestProdProject-*
               - !Sub arn:aws:codebuild:${AWS::Region}:${AWS::AccountId}:project/BuildProject-*
           - Effect: Allow
             Action:
@@ -196,14 +194,17 @@ Resources:
             Resource:
               - !Ref PipelineServiceRoleArn
               - !Sub arn:aws:iam::${DevAwsAccountId}:role/CodePipelineDeploymentRole-${AWS::Region}-${DevAwsAccountId}-dev
+              - !Sub arn:aws:iam::${ProdAwsAccountId}:role/CodePipelineDeploymentRole-${AWS::Region}-${ProdAwsAccountId}-prod
               - !Sub arn:aws:iam::${DevAwsAccountId}:role/CodePipelineServiceRole-${AWS::Region}-${DevAwsAccountId}-dev
+              - !Sub arn:aws:iam::${ProdAwsAccountId}:role/CodePipelineServiceRole-${AWS::Region}-${ProdAwsAccountId}-prod
           - Effect: Allow
             Action:
               - codepipeline:CreatePipeline
               - codepipeline:GetPipeline
               - codepipeline:GetPipelineState
               - codepipeline:DeletePipeline
-            Resource: !Sub arn:aws:codepipeline:${AWS::Region}:${AWS::AccountId}:${ParentStackName}*
+            Resource:
+              - !Sub arn:aws:codepipeline:${AWS::Region}:${AWS::AccountId}:${ParentStackName}*
           - Effect: Allow
             Action:
               - lambda:InvokeFunction
@@ -219,6 +220,10 @@ Resources:
               - secretsmanager:*
             Resource:
               - "arn:aws:secretsmanager:ap-southeast-2:833843385348:secret:poc-github-personal-access-token-code-build-26zfJL"
+          - Effect: Allow
+            Action:
+              - sns:*
+            Resource: "*"
 
   DynamicPipelineMakerLambda:
     Type: AWS::Serverless::Function
@@ -232,10 +237,7 @@ Resources:
       Environment:
         Variables:
           LOGGING_LEVEL: INFO
-          TemplateURL: !Sub 
-            - https://${S3Bucket}.s3.${S3Region}.${AWS::URLSuffix}/${S3KeyPrefix}/templates/pipeline.template.yaml
-            - S3Region: !If [UsingDefaultBucket, !Ref 'AWS::Region', !Ref S3BucketRegion]
-              S3Bucket: !If [UsingDefaultBucket, !Sub '${S3BucketName}-${AWS::Region}', !Ref S3BucketName]
+          TemplateURLPrefix: !Sub "https://${S3BucketName}.s3.${AWS::Region}.${AWS::URLSuffix}/${S3KeyPrefix}/"
           StackName: !Ref ParentStackName
           DynamicPipelineCleanupLambdaArn: !GetAtt DynamicPipelineCleanupLambda.Arn
           ArtifactBucket: !Ref ArtifactBucket

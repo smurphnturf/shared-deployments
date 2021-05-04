@@ -19,15 +19,15 @@ def update(e, c):
     cf_client = get_client("cloudformation", e, c)
     rp = e['ResourceProperties']
     try:
-    response = cf_client.update_stack(
-        StackName=e["PhysicalResourceId"],
-        TemplateBody=rp['TemplateBody'],
-        Parameters=get_cfn_parameters(e),
-        Capabilities=rp['Capabilities']
-    )
+        response = cf_client.update_stack(
+            StackName=e["PhysicalResourceId"],
+            TemplateBody=rp['TemplateBody'],
+            Parameters=get_cfn_parameters(e),
+            Capabilities=rp['Capabilities']
+        )
     except ClientError as er:
-    if "No updates are to be performed" not in str(er):
-        raise
+        if "No updates are to be performed" not in str(er):
+            raise
     return e["PhysicalResourceId"]
     waiter = cf_client.get_waiter('stack_update_complete')
     waiter.wait(StackName=e["PhysicalResourceId"])

@@ -51,10 +51,6 @@ Resources:
       Parameters:
         DevAwsAccountId: !Ref DevAwsAccountId
         ProdAwsAccountId: !Ref ProdAwsAccountId
-      #TemplateURL: !Sub 
-      #  - https://${S3Bucket}.s3.${S3Region}.${AWS::URLSuffix}/${S3KeyPrefix}templates/account.template.yaml
-      #  - S3Region: !If [UsingDefaultBucket, !Ref 'AWS::Region', !Ref S3BucketRegion]
-      #    S3Bucket: !If [UsingDefaultBucket, !Sub '${S3BucketName}-${AWS::Region}', !Ref S3BucketName]
       TemplateURL: file://../../templates/account.template.yaml
       TimeoutInMinutes: 60
 
@@ -67,7 +63,6 @@ Resources:
         PipelineServiceRoleArn: !GetAtt 
           - AccountStack
           - Outputs.PipelineServiceRoleArn
-        AppName: !Ref AppName
         ParentStackName: !Ref AWS::StackName
         S3BucketName: !Ref S3BucketName
         S3BucketRegion: !Ref S3BucketRegion
@@ -81,10 +76,6 @@ Resources:
         SamTranslationBucket: !GetAtt 
           - AccountStack
           - Outputs.SamTranslationBucket
-      #TemplateURL: !Sub 
-      #  - https://${S3Bucket}.s3.${S3Region}.${AWS::URLSuffix}/${S3KeyPrefix}templates/lambda.template.yaml 
-      #  - S3Region: !If [UsingDefaultBucket, !Ref 'AWS::Region', !Ref S3BucketRegion]      
-      #    S3Bucket: !If [UsingDefaultBucket, !Sub '${S3BucketName}-${AWS::Region}', !Ref S3BucketName]
       TemplateURL: file://../../templates/lambda.template.yaml
       TimeoutInMinutes: 60
 
@@ -98,10 +89,6 @@ Resources:
           - Outputs.QuickStartStackMakerLambda
         Stage: dev
         ChildAccountRoleName: !Ref DevChildAccountRoleName
-      #TemplateURL: !Sub 
-      #  - https://${S3Bucket}.s3.${S3Region}.${AWS::URLSuffix}/${S3KeyPrefix}templates/cross-account.template.yaml
-      #  - S3Region: !If [UsingDefaultBucket, !Ref 'AWS::Region', !Ref S3BucketRegion]
-      #    S3Bucket: !If [UsingDefaultBucket, !Sub '${S3BucketName}-${AWS::Region}', !Ref S3BucketName]
       TemplateURL: file://../../templates/cross-account.template.yaml
       TimeoutInMinutes: 60
 
@@ -115,10 +102,6 @@ Resources:
           - Outputs.QuickStartStackMakerLambda
         Stage: prod
         ChildAccountRoleName: !Ref ProdChildAccountRoleName
-      #TemplateURL: !Sub
-      #  - https://${S3Bucket}.s3.${S3Region}.${AWS::URLSuffix}/${S3KeyPrefix}templates/cross-account.template.yaml
-      #  - S3Region: !If [UsingDefaultBucket, !Ref 'AWS::Region', !Ref S3BucketRegion]
-      #    S3Bucket: !If [UsingDefaultBucket, !Sub '${S3BucketName}-${AWS::Region}', !Ref S3BucketName]
       TemplateURL: file://../../templates/cross-account.template.yaml
       TimeoutInMinutes: 60
 
@@ -141,5 +124,35 @@ Resources:
       Bucket: !GetAtt 
         - AccountStack
         - Outputs.PipelineArtifactBucket
+
+  ###############################
+  ###        PROJECTS         ###
+  ###############################
+
+  #SampleProjectSetupStack:
+    #DependsOn:
+      #- CrossAccountStackDev
+      #- CrossAccountStackProd
+    #Type: AWS::CloudFormation::Stack
+    #Properties:
+      #Parameters:
+        #DevAwsAccountId: !Ref DevAwsAccountId
+        #ProdAwsAccountId: !Ref ProdAwsAccountId
+        #ArtifactBucket: !GetAtt 
+          #- AccountStack
+          #- Outputs.PipelineArtifactBucket
+        #ArtifactBucketKeyArn: !GetAtt 
+          #- AccountStack
+          #- Outputs.ArtifactBucketKeyArn
+        #SamTranslationBucket: !GetAtt 
+          #- AccountStack
+          #- Outputs.SamTranslationBucket
+        #PipelineServiceRoleArn: !GetAtt 
+          #- AccountStack
+          #- Outputs.PipelineServiceRoleArn
+      ## https://<s3-url>/prefix/<repo-name>/<branch>/project.template.yaml
+      ##TemplateURL: !Sub 'https://${S3BucketName}.s3.${AWS::Region}.${AWS::URLSuffix}/${S3KeyPrefix}/sample-project/master/project.template.yaml'
+      #TemplateURL: file://../../templates/projects/sample.template.yaml
+      #TimeoutInMinutes: 60
 
       

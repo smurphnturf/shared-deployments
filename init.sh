@@ -1,5 +1,7 @@
 #!/bin/bash
 
+# check if infra bucket exists au-slyp-com-shared-cross-account-template-base-poc or else make it
+
 sam build --template templates/full-stack.template.yaml -b .aws-sam/build --debug
 
 sam deploy --stack-name=shared-deployments --s3-prefix=shared-deployments --profile=shared-poweruser --s3-bucket=au-slyp-com-shared-cross-account-template-base-poc \
@@ -9,3 +11,16 @@ ProdAwsAccountId=040536061213 \
 S3BucketName=au-slyp-com-shared-cross-account-template-base-poc \
 S3KeyPrefix=shared-deployments  \
 --capabilities CAPABILITY_NAMED_IAM CAPABILITY_AUTO_EXPAND
+
+
+
+exit 
+
+
+#sam build --template pipeline.template.yaml -b .aws-sam/build --debug
+
+#sam deploy --stack-name=shared-deployments-pipeline --s3-prefix=shared-deployments-pipeline --profile=shared-poweruser --s3-bucket=au-slyp-com-shared-cross-account-template-base-poc \
+#--parameter-overrides=\
+#ArtifactBucket=au-slyp-com-shared-cross-account-template-base-poc \
+#ArtifactBucketKeyArn=arn:aws:kms:ap-southeast-2:833843385348:key/d83cee07-2c94-415e-adfa-0b148224e8dc \
+#--capabilities CAPABILITY_NAMED_IAM CAPABILITY_AUTO_EXPAND

@@ -1,9 +1,11 @@
-# first ChildAccountRole needs to be deployed in any accounts that will be deployed from the shared account or the test shared account
+# first ChildAccountRole needs to be deployed 
+in any accounts that will be deployed from the shared account or the test shared account
 
-# First we need a bucket:   
-
+# Next we need a bucket:   
 aws s3 --profile shared-poweruser mb s3://au-slyp-com-shared-cross-account-template-base-poc --region ap-southeast-2
 
+# Remember clean up
+Delete the cross account stacks in the sub accounts
 
 
 # Put pipeline stack into s3

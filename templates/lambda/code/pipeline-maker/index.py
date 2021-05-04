@@ -33,9 +33,15 @@ def sanitize_branch_name(branch):
 def create_pipeline_stack(branch, customParameters):
     suffix, StackName = sanitize_branch_name(branch)
     logger.info('creating stack: {}'.format(StackName))
+    template_url_prefix = os.environ['TemplateURLPrefix']
+    # todo we need to clean this up with the clean up bucket lambda
+    # https://${S3BucketName}.s3.${AWS::Region}.${AWS::URLSuffix}/${S3KeyPrefix}/<repo>/<branch-name>/pipeline.temlpate.yaml
+    logger.info('Using RepoName: {}'.format(customParameters['RepoName']))
+    template_url = template_url_prefix + customParameters['RepoName'] + '/' + branch + '/pipeline.template.yaml'
+    logger.info('Using TemplateURL: {}'.format(template_url))
     response = cf_client.create_stack(
         StackName=StackName,
-        TemplateURL=os.environ['TemplateURL'],
+        TemplateURL=template_url,
         Parameters=[
             {
                 'ParameterKey': 'Branch',
@@ -65,6 +71,14 @@ def create_pipeline_stack(branch, customParameters):
                 'ParameterKey': 'SamTranslationBucket',
                 'ParameterValue': os.environ['SamTranslationBucket']
             },
+            {
+                'ParameterKey': 'ProdAwsAccountId',
+                'ParameterValue': os.environ['ProdAwsAccountId']
+            },
+            {
+                'ParameterKey': 'DevAwsAccountId',
+                'ParameterValue': os.environ['DevAwsAccountId']
+            },
         ]+list(map(lambda x: {"ParameterKey": x, "ParameterValue": customParameters[x]}, customParameters))
     )
     waiter = cf_client.get_waiter('stack_create_complete')
@@ -82,7 +96,6 @@ def lambda_handler(event, context):
             repository = message['repository']
             ref = message['ref']
             based_ref = message['base_ref']
-            event = message['event']
             event_name = message['event_name']
             if ref.split('/')[1] == 'heads':
                 # it is branch
@@ -95,24 +108,22 @@ def lambda_handler(event, context):
                     # whats the best way to give this to GHA
                     #Serverless-CICD-cross-account-poc-ProjectSetupStack-7TOUHNP27ZUG
                     logger.info('created new branch:{}, creating pipeline for this branch'.format(branch))
+                    #s3Prefix + name + id ()
+                    # TODO figure out how to get this dynamically
                     response = cf_client.describe_stacks(
-                        StackName='Serverless-CICD-cross-account-poc-ProjectSetupStack-7TOUHNP27ZUG'
+                        StackName='shared-deployments-SampleProjectSetupStack-MEJCZW2KPT5V'
                     )
                     logger.info('Describe_stacks response:{}'.format(response))
-                    #template_params = {}
-                    #template_params['AppName'] = repository.split('/')[1]
-                    #template_params['Suffix'] = 'custom-suffix'
                     stack_outputs = response['Stacks'][0]['Outputs']
                     for output in stack_outputs:
                         logger.info('Output eval:{}'.format(json.dumps(output)))
                         if 'ExportName' in output:
                             logger.info('Exportname:{}'.format(output['ExportName']))
-                            if output['ExportName'] == 'Sample-CustomData':
+                            if output['ExportName'] == (repository.split('/')[1] + '-CustomData'):
                                 output_data = output['OutputValue']
                                 break
-                    #override AppName
                     json_output_data = json.loads(output_data)
-                    json_output_data['AppName'] = repository.split('/')[1]
+                    json_output_data['RepoName'] = repository.split('/')[1]
                     logger.info('Using params:{}'.format(json.dumps(json_output_data)))
                     future = executor.submit(create_pipeline_stack, branch, json_output_data)
                     result_futures.append(future)

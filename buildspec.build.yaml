@@ -1,0 +1,19 @@
+version: 0.2
+env:
+  variables:
+    DIST_FOLDER: "dist"
+    BUILD_ENV: "dev"
+phases:
+  build:
+    commands:
+      - echo "Doing a SAM translation on full-stack.template.yaml"
+      - 
+      - aws cloudformation package --template-file templates/full-stack.template.yaml --output-template-file full-stack-transformed.yaml --s3-bucket $SAM_BUCKET
+      - |-
+        echo "{ \"Parameters\" : { \"DevAwsAccountId\" : \"$DEV_ACCOUNT_ID\", \"ProdAwsAccountId\" : \"$PROD_ACCOUNT_ID\", \"S3BucketName\" : \"$SAM_BUCKET\", \"S3KeyPrefix\" : \"shared-deployments\" } }" > full-stack-configuration-dev.json
+        echo "{ \"Parameters\" : { \"DevAwsAccountId\" : \"$PROD_ACCOUNT_ID\", \"ProdAwsAccountId\" : \"833843385348\", \"S3BucketName\" : \"$SAM_BUCKET\", \"S3KeyPrefix\" : \"shared-deployments\" } }" > full-stack-configuration-prod.json
+artifacts:
+  files:
+    - full-stack-transformed.yaml
+    - full-stack-configuration-dev.json
+    - full-stack-configuration-prod.json
