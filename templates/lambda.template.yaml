@@ -195,10 +195,10 @@ Resources:
               - !Ref PipelineServiceRoleArn
               - !Sub arn:aws:iam::${DevAwsAccountId}:role/CodePipelineDeploymentRole-${AWS::Region}-${DevAwsAccountId}-dev
               - !Sub arn:aws:iam::${ProdAwsAccountId}:role/CodePipelineDeploymentRole-${AWS::Region}-${ProdAwsAccountId}-prod
+              - !Sub arn:aws:iam::${AWS::AccountId}:role/CodePipelineDeploymentRole-${AWS::Region}-${AWS::AccountId}-shared
               - !Sub arn:aws:iam::${DevAwsAccountId}:role/CodePipelineServiceRole-${AWS::Region}-${DevAwsAccountId}-dev
               - !Sub arn:aws:iam::${ProdAwsAccountId}:role/CodePipelineServiceRole-${AWS::Region}-${ProdAwsAccountId}-prod
-              - !Sub arn:aws:iam::${AWS::AccountId}:role/CodePipelineDeploymentRole-*
-          # adding self deployment ability to assume this accounts CodePipelieDeploymentRole
+              - !Sub arn:aws:iam::${AWS::AccountId}:role/CodePipelineServiceRole-${AWS::Region}-${AWS::AccountId}-shared
           - Effect: Allow
             Action:
               - iam:CreateRole
@@ -208,11 +208,10 @@ Resources:
               - iam:AttachRolePolicy
               - iam:PutRolePolicy
               - iam:DeleteRolePolicy
-              - iam:GetRole
             Resource:
               #- !Sub arn:aws:iam::${AWS::AccountId}:role/SampleLambdaRole-*
               - !Sub arn:aws:iam::${AWS::AccountId}:role/CodePipelineDeploymentRole-*
-              #- !Sub arn:aws:iam::${AWS::AccountId}:role/CodePipelineServiceRole-*
+              - !Sub arn:aws:iam::${AWS::AccountId}:role/CodePipelineServiceRole-*
           - Effect: Allow
             Action:
               - codepipeline:CreatePipeline

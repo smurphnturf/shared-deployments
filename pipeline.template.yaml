@@ -173,7 +173,7 @@ Resources:
                 TemplatePath: BuildArtifact::full-stack-transformed.yaml
                 TemplateConfiguration: BuildArtifact::full-stack-configuration-dev.json
               #RoleArn: !Sub arn:aws:iam::${AWS::AccountId}:role/CodePipelineServiceRole-${AWS::Region}-${AWS::AccountId}-dev
-              !GetAtt ServiceRole.Arn
+              RoleArn: !GetAtt ServiceRole.Arn
             - Name: DeployChangeSet
               RunOrder: 2
               ActionTypeId:
@@ -193,7 +193,7 @@ Resources:
                     - !Sub ${Suffix}-dev
                     - !Sub shared-deployments-dev-${Suffix}
               #RoleArn: !Sub arn:aws:iam::${AWS::AccountId}:role/CodePipelineServiceRole-${AWS::Region}-${AWS::AccountId}-dev
-              !GetAtt ServiceRole.Arn
+              RoleArn: !GetAtt ServiceRole.Arn
         - !If
           - IsProdStage
           - Name: DeployToProd
