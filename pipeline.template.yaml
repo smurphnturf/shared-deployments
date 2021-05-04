@@ -58,64 +58,11 @@ Resources:
     Type: AWS::SNS::Topic
     Properties:
       DisplayName: !Sub ${Suffix}-notifications-${AWS::Region}
-
-
-  ServiceRole:
-    Type: AWS::IAM::Role
-    Properties:
-      RoleName: !Sub CodePipelineServiceRole-${AWS::Region}-${AWS::AccountId}-shared
-      Path: /
-      AssumeRolePolicyDocument:
-        Version: '2012-10-17'
-        Statement:
-          - Effect: Allow
-            Principal:
-              AWS: !Ref AWS::AccountId
-              Service:
-                - codepipeline.amazonaws.com
-            Action: sts:AssumeRole
-      Policies:
-        - PolicyName: CloudFormationAdminAccess
-          PolicyDocument:
-            Version: '2012-10-17'
-            Statement:
-              - Resource: "*"
-                Effect: Allow
-                Action:
-                  - cloudformation:*
-              - Resource: "*"
-                Effect: Allow
-                Action:
-                  - s3:GetObject
-              - Resource: !Sub arn:aws:kms:${AWS::Region}:${AWS::AccountId}:*
-                Effect: Allow
-                Action:
-                  - kms:Decrypt
-              - Resource: !GetAtt DeploymentRole.Arn
-                Effect: Allow
-                Action:
-                  - iam:PassRole
-  DeploymentRole:
-    Type: AWS::IAM::Role
-    Properties:
-      RoleName: !Sub CodePipelineDeploymentRole-${AWS::Region}-${AWS::AccountId}-shared
-      Path: /
-      AssumeRolePolicyDocument:
-        Version: '2012-10-17'
-        Statement:
-          - Effect: Allow
-            Principal:
-              Service:
-                - cloudformation.amazonaws.com
-            Action: sts:AssumeRole
-      ManagedPolicyArns:
-        - arn:aws:iam::aws:policy/AdministratorAccess
   
   Pipeline:
     Type: AWS::CodePipeline::Pipeline
     Properties:
       RoleArn: !Ref PipelineServiceRoleArn
-      #RoleArn: !GetAtt ServiceRole.Arn
       Stages:
         - Name: Source
           Actions:
@@ -161,10 +108,11 @@ Resources:
                 Version: '1'
               Configuration:
                 ActionMode: CHANGE_SET_REPLACE
-                Capabilities: CAPABILITY_IAM
+                Capabilities: 
+                  - CAPABILITY_NAMED_IAM 
+                  - CAPABILITY_AUTO_EXPAND
                 ChangeSetName: !Sub shared-deployments-change-set-${Suffix}
-                #RoleArn: !Sub arn:aws:iam::${AWS::AccountId}:role/CodePipelineDeploymentRole-${AWS::Region}-${AWS::AccountId}-dev
-                RoleArn: !GetAtt DeploymentRole.Arn
+                RoleArn: !Sub arn:aws:iam::${AWS::AccountId}:role/CodePipelineDeploymentRole-${AWS::Region}-${AWS::AccountId}-shared
                 StackName: shared-deployments
                   #!If
                   #  - IsProdStage
@@ -172,8 +120,7 @@ Resources:
                   #  - !Sub shared-deployments-dev-${Suffix}
                 TemplatePath: BuildArtifact::full-stack-transformed.yaml
                 TemplateConfiguration: BuildArtifact::full-stack-configuration-dev.json
-              #RoleArn: !Sub arn:aws:iam::${AWS::AccountId}:role/CodePipelineServiceRole-${AWS::Region}-${AWS::AccountId}-dev
-              RoleArn: !GetAtt ServiceRole.Arn
+              RoleArn: !Sub arn:aws:iam::${AWS::AccountId}:role/CodePipelineServiceRole-${AWS::Region}-${AWS::AccountId}-shared
             - Name: DeployChangeSet
               RunOrder: 2
               ActionTypeId:
@@ -183,17 +130,17 @@ Resources:
                 Version: '1'
               Configuration:
                 ActionMode: CHANGE_SET_EXECUTE
-                Capabilities: CAPABILITY_IAM
+                Capabilities:
+                  - CAPABILITY_NAMED_IAM 
+                  - CAPABILITY_AUTO_EXPAND
                 ChangeSetName: !Sub shared-deployments-change-set-${Suffix}
-                #RoleArn: !Sub arn:aws:iam::${AWS::AccountId}:role/CodePipelineDeploymentRole-${AWS::Region}-${AWS::AccountId}-dev
-                RoleArn: !GetAtt DeploymentRole.Arn
+                RoleArn: !Sub arn:aws:iam::${AWS::AccountId}:role/CodePipelineDeploymentRole-${AWS::Region}-${AWS::AccountId}-shared
                 StackName: shared-deployments
                   #!If
                   #  - IsProdStage
                   #  - !Sub ${Suffix}-dev
                   #  - !Sub shared-deployments-dev-${Suffix}
-              #RoleArn: !Sub arn:aws:iam::${AWS::AccountId}:role/CodePipelineServiceRole-${AWS::Region}-${AWS::AccountId}-dev
-              RoleArn: !GetAtt ServiceRole.Arn
+              RoleArn: !Sub arn:aws:iam::${AWS::AccountId}:role/CodePipelineServiceRole-${AWS::Region}-${AWS::AccountId}-shared
         - !If
           - IsProdStage
           - Name: DeployToProd
@@ -209,7 +156,9 @@ Resources:
                   Version: '1'
                 Configuration:
                   ActionMode: CHANGE_SET_REPLACE
-                  Capabilities: CAPABILITY_IAM
+                  Capabilities: 
+                    - CAPABILITY_NAMED_IAM 
+                    - CAPABILITY_AUTO_EXPAND
                   ChangeSetName: !Sub ${Suffix}-change-set
                   #RoleArn: !Sub arn:aws:iam::${ProdAwsAccountId}:role/CodePipelineDeploymentRole-${AWS::Region}-${ProdAwsAccountId}-prod
                   RoleArn: !Sub arn:aws:iam::${DevAwsAccountId}:role/CodePipelineDeploymentRole-${AWS::Region}-${DevAwsAccountId}-dev  
@@ -239,7 +188,9 @@ Resources:
                   Version: '1'
                 Configuration:
                   ActionMode: CHANGE_SET_EXECUTE
-                  Capabilities: CAPABILITY_IAM
+                  Capabilities:
+                    - CAPABILITY_NAMED_IAM 
+                    - CAPABILITY_AUTO_EXPAND
                   ChangeSetName: !Sub ${Suffix}-change-set
                   #RoleArn: !Sub arn:aws:iam::${ProdAwsAccountId}:role/CodePipelineDeploymentRole-${AWS::Region}-${ProdAwsAccountId}-prod
                   RoleArn: !Sub arn:aws:iam::${DevAwsAccountId}:role/CodePipelineDeploymentRole-${AWS::Region}-${DevAwsAccountId}-dev
@@ -278,7 +229,6 @@ Resources:
             #Value: !Ref ArtifactBucket
             Value: au-slyp-com-shared-cross-account-template-base-poc
       ServiceRole: !Ref PipelineServiceRoleArn
-      #ServiceRole: !GetAtt ServiceRole.Arn
       EncryptionKey: !Ref ArtifactBucketKeyArn
 
 Outputs:

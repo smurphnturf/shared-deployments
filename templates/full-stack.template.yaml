@@ -79,6 +79,20 @@ Resources:
       TemplateURL: file://../../templates/lambda.template.yaml
       TimeoutInMinutes: 60
 
+  CrossAccountStackSelf:
+    Type: AWS::CloudFormation::Stack
+    Properties:
+      Parameters:
+        AwsAccountId: !Ref AWS::AccountId
+        QuickStartStackMakerLambda: !GetAtt 
+          - LambdaStack
+          - Outputs.QuickStartStackMakerLambda
+        Stage: shared
+        # change to SelfChildAccountROleName
+        ChildAccountRoleName: !Ref DevChildAccountRoleName
+      TemplateURL: file://../../templates/cross-account.template.yaml
+      TimeoutInMinutes: 60
+  
   CrossAccountStackDev:
     Type: AWS::CloudFormation::Stack
     Properties:
