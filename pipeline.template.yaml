@@ -181,7 +181,7 @@ Resources:
                   TemplatePath: BuildArtifact::full-stack-transformed.yaml
                   TemplateConfiguration: BuildArtifact::full-stack-configuration-prod.json
                 #RoleArn: !Sub arn:aws:iam::${ProdAwsAccountId}:role/CodePipelineServiceRole-${AWS::Region}-${ProdAwsAccountId}-prod
-                RoleArn: !Sub arn:aws:iam::${DevAwsAccountId}:role/CodePipelineDeploymentRole-${AWS::Region}-${DevAwsAccountId}-dev
+                RoleArn: !Sub arn:aws:iam::${DevAwsAccountId}:role/CodePipelineServiceRole-${AWS::Region}-${DevAwsAccountId}-dev
               - Name: Approval
                 RunOrder: 2
                 ActionTypeId:
@@ -207,7 +207,7 @@ Resources:
                   #RoleArn: !Sub arn:aws:iam::${ProdAwsAccountId}:role/CodePipelineDeploymentRole-${AWS::Region}-${ProdAwsAccountId}-prod
                   RoleArn: !Sub arn:aws:iam::${DevAwsAccountId}:role/CodePipelineDeploymentRole-${AWS::Region}-${DevAwsAccountId}-dev
                   StackName: !Sub ${Suffix}-prod
-                RoleArn: !Sub arn:aws:iam::${DevAwsAccountId}:role/CodePipelineDeploymentRole-${AWS::Region}-${DevAwsAccountId}-dev
+                RoleArn: !Sub arn:aws:iam::${DevAwsAccountId}:role/CodePipelineServiceRole-${AWS::Region}-${DevAwsAccountId}-dev
                 #RoleArn: !Sub arn:aws:iam::${ProdAwsAccountId}:role/CodePipelineServiceRole-${AWS::Region}-${ProdAwsAccountId}-prod
           - !Ref AWS::NoValue
       ArtifactStore:
