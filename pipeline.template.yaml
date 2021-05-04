@@ -165,11 +165,11 @@ Resources:
                 ChangeSetName: !Sub shared-deployments-change-set-${Suffix}
                 #RoleArn: !Sub arn:aws:iam::${AWS::AccountId}:role/CodePipelineDeploymentRole-${AWS::Region}-${AWS::AccountId}-dev
                 RoleArn: !GetAtt DeploymentRole.Arn
-                StackName:
-                  !If
-                    - IsProdStage
-                    - !Sub ${Suffix}-dev
-                    - !Sub shared-deployments-dev-${Suffix}
+                StackName: shared-deployments
+                  #!If
+                  #  - IsProdStage
+                  #  - !Sub ${Suffix}-dev
+                  #  - !Sub shared-deployments-dev-${Suffix}
                 TemplatePath: BuildArtifact::full-stack-transformed.yaml
                 TemplateConfiguration: BuildArtifact::full-stack-configuration-dev.json
               #RoleArn: !Sub arn:aws:iam::${AWS::AccountId}:role/CodePipelineServiceRole-${AWS::Region}-${AWS::AccountId}-dev
@@ -187,11 +187,11 @@ Resources:
                 ChangeSetName: !Sub shared-deployments-change-set-${Suffix}
                 #RoleArn: !Sub arn:aws:iam::${AWS::AccountId}:role/CodePipelineDeploymentRole-${AWS::Region}-${AWS::AccountId}-dev
                 RoleArn: !GetAtt DeploymentRole.Arn
-                StackName:
-                  !If
-                    - IsProdStage
-                    - !Sub ${Suffix}-dev
-                    - !Sub shared-deployments-dev-${Suffix}
+                StackName: shared-deployments
+                  #!If
+                  #  - IsProdStage
+                  #  - !Sub ${Suffix}-dev
+                  #  - !Sub shared-deployments-dev-${Suffix}
               #RoleArn: !Sub arn:aws:iam::${AWS::AccountId}:role/CodePipelineServiceRole-${AWS::Region}-${AWS::AccountId}-dev
               RoleArn: !GetAtt ServiceRole.Arn
         - !If
@@ -213,8 +213,8 @@ Resources:
                   ChangeSetName: !Sub ${Suffix}-change-set
                   #RoleArn: !Sub arn:aws:iam::${ProdAwsAccountId}:role/CodePipelineDeploymentRole-${AWS::Region}-${ProdAwsAccountId}-prod
                   RoleArn: !Sub arn:aws:iam::${DevAwsAccountId}:role/CodePipelineDeploymentRole-${AWS::Region}-${DevAwsAccountId}-dev  
-                  StackName:
-                     !Sub ${Suffix}-prod
+                  StackName: shared-deployments
+                     #!Sub ${Suffix}-prod
                   TemplatePath: BuildArtifact::full-stack-transformed.yaml
                   TemplateConfiguration: BuildArtifact::full-stack-configuration-prod.json
                 #RoleArn: !Sub arn:aws:iam::${ProdAwsAccountId}:role/CodePipelineServiceRole-${AWS::Region}-${ProdAwsAccountId}-prod
@@ -243,7 +243,8 @@ Resources:
                   ChangeSetName: !Sub ${Suffix}-change-set
                   #RoleArn: !Sub arn:aws:iam::${ProdAwsAccountId}:role/CodePipelineDeploymentRole-${AWS::Region}-${ProdAwsAccountId}-prod
                   RoleArn: !Sub arn:aws:iam::${DevAwsAccountId}:role/CodePipelineDeploymentRole-${AWS::Region}-${DevAwsAccountId}-dev
-                  StackName: !Sub ${Suffix}-prod
+                  StackName: shared-deployments
+                    #!Sub ${Suffix}-prod
                 RoleArn: !Sub arn:aws:iam::${DevAwsAccountId}:role/CodePipelineServiceRole-${AWS::Region}-${DevAwsAccountId}-dev
                 #RoleArn: !Sub arn:aws:iam::${ProdAwsAccountId}:role/CodePipelineServiceRole-${AWS::Region}-${ProdAwsAccountId}-prod
           - !Ref AWS::NoValue
