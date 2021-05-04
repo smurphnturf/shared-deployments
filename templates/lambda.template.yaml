@@ -199,6 +199,13 @@ Resources:
               - !Sub arn:aws:iam::${ProdAwsAccountId}:role/CodePipelineServiceRole-${AWS::Region}-${ProdAwsAccountId}-prod
           - Effect: Allow
             Action:
+              - iam:GetRole
+            Resource:
+              #- !Sub arn:aws:iam::${AWS::AccountId}:role/SampleLambdaRole-*
+              - !Sub arn:aws:iam::${AWS::AccountId}:role/CodePipelineDeploymentRole-*
+              #- !Sub arn:aws:iam::${AWS::AccountId}:role/CodePipelineServiceRole-*
+          - Effect: Allow
+            Action:
               - codepipeline:CreatePipeline
               - codepipeline:GetPipeline
               - codepipeline:GetPipelineState

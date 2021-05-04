@@ -62,7 +62,7 @@ Resources:
   DeploymentRole:
     Type: AWS::IAM::Role
     Properties:
-      RoleName: !Sub CodePipelineDeploymentRole-${AWS::Region}-${AWS::AccountId}-test-shared
+      RoleName: !Sub CodePipelineDeploymentRole-${AWS::AccountId}-testshared
       Path: /
       AssumeRolePolicyDocument:
         Version: '2012-10-17'
