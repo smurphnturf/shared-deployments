@@ -197,6 +197,7 @@ Resources:
               - !Sub arn:aws:iam::${ProdAwsAccountId}:role/CodePipelineDeploymentRole-${AWS::Region}-${ProdAwsAccountId}-prod
               - !Sub arn:aws:iam::${DevAwsAccountId}:role/CodePipelineServiceRole-${AWS::Region}-${DevAwsAccountId}-dev
               - !Sub arn:aws:iam::${ProdAwsAccountId}:role/CodePipelineServiceRole-${AWS::Region}-${ProdAwsAccountId}-prod
+              - !Sub arn:aws:iam::${AWS::AccountId}:role/CodePipelineDeploymentRole-*
           # adding self deployment ability to assume this accounts CodePipelieDeploymentRole
           - Effect: Allow
             Action:
