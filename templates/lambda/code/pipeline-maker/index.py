@@ -110,22 +110,25 @@ def lambda_handler(event, context):
                     logger.info('created new branch:{}, creating pipeline for this branch'.format(branch))
                     #s3Prefix + name + id ()
                     # TODO figure out how to get this dynamically
-                    response = cf_client.describe_stacks(
-                        StackName='shared-deployments-SampleProjectSetupStack-MEJCZW2KPT5V'
-                    )
-                    logger.info('Describe_stacks response:{}'.format(response))
-                    stack_outputs = response['Stacks'][0]['Outputs']
-                    for output in stack_outputs:
-                        logger.info('Output eval:{}'.format(json.dumps(output)))
-                        if 'ExportName' in output:
-                            logger.info('Exportname:{}'.format(output['ExportName']))
-                            if output['ExportName'] == (repository.split('/')[1] + '-CustomData'):
-                                output_data = output['OutputValue']
-                                break
-                    json_output_data = json.loads(output_data)
-                    json_output_data['RepoName'] = repository.split('/')[1]
-                    logger.info('Using params:{}'.format(json.dumps(json_output_data)))
-                    future = executor.submit(create_pipeline_stack, branch, json_output_data)
+                    
+                    #response = cf_client.describe_stacks(
+                    #    StackName='shared-deployments-SampleProjectSetupStack-MEJCZW2KPT5V'
+                    #)
+                    #logger.info('Describe_stacks response:{}'.format(response))
+                    #stack_outputs = response['Stacks'][0]['Outputs']
+                    #for output in stack_outputs:
+                    #    logger.info('Output eval:{}'.format(json.dumps(output)))
+                    #    if 'ExportName' in output:
+                    #        logger.info('Exportname:{}'.format(output['ExportName']))
+                    #        if output['ExportName'] == (repository.split('/')[1] + '-CustomData'):
+                    #            output_data = output['OutputValue']
+                    #            break
+                    #json_output_data = json.loads(output_data)
+                    #json_output_data['RepoName'] = repository.split('/')[1]
+                    #logger.info('Using params:{}'.format(json.dumps(json_output_data)))
+                    #future = executor.submit(create_pipeline_stack, branch, json_output_data)
+
+                    future = executor.submit(create_pipeline_stack, branch, {})
                     result_futures.append(future)
                 elif event_name == 'delete':
                     logger.info('deleted old branch:{}, deleting pipeline for this branch'.format(branch))
