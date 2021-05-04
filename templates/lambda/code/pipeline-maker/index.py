@@ -128,7 +128,9 @@ def lambda_handler(event, context):
                     #logger.info('Using params:{}'.format(json.dumps(json_output_data)))
                     #future = executor.submit(create_pipeline_stack, branch, json_output_data)
 
-                    future = executor.submit(create_pipeline_stack, branch, {})
+                    json_output_data = {}
+                    json_output_data['RepoName'] = repository.split('/')[1]
+                    future = executor.submit(create_pipeline_stack, branch, json_output_data)
                     result_futures.append(future)
                 elif event_name == 'delete':
                     logger.info('deleted old branch:{}, deleting pipeline for this branch'.format(branch))
